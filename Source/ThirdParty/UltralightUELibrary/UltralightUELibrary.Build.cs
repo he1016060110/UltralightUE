@@ -87,13 +87,18 @@ public class UltralightUELibrary : ModuleRules
                 Path.Combine(PluginBinariesDir, "UltralightCore.dll")
             });
 
-            RuntimeDependencies.AddRange(new RuntimeDependency[] {
-                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll")),
-                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.dll")),
-                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.dll")),
-                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "inspector_resources.pak")),
-                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "cacert.pem"))
-            });
+            // RuntimeDependencies.AddRange(new RuntimeDependency[] {
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll")),
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.dll")),
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.dll")),
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "inspector_resources.pak")),
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "cacert.pem"))
+            // });
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.dll")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.dll")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "inspector_resources.pak")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "cacert.pem")));
 
             // Copy files to project binaries
             CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll"), Target);
@@ -127,13 +132,18 @@ public class UltralightUELibrary : ModuleRules
                 Path.Combine("$(PluginDir)", "Source", "ThirdParty", "UltralightUELibrary", PlatformDir, "Release", "libUltralight.dylib")
             });
 
-            RuntimeDependencies.AddRange(new RuntimeDependency[] {
-                new RuntimeDependency(Path.Combine(DylibDir, "libWebCore.dylib")),
-                new RuntimeDependency(Path.Combine(DylibDir, "libUltralightCore.dylib")),
-                new RuntimeDependency(Path.Combine(DylibDir, "libUltralight.dylib")),
-                new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak")), // Assuming resources are platform-agnostic or also in Mac/Release
-                new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "cacert.pem"))
-            });
+            // RuntimeDependencies.AddRange(new RuntimeDependency[] {
+            //     new RuntimeDependency(Path.Combine(DylibDir, "libWebCore.dylib")),
+            //     new RuntimeDependency(Path.Combine(DylibDir, "libUltralightCore.dylib")),
+            //     new RuntimeDependency(Path.Combine(DylibDir, "libUltralight.dylib")),
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak")), // Assuming resources are platform-agnostic or also in Mac/Release
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "cacert.pem"))
+            // });
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(DylibDir, "libWebCore.dylib")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(DylibDir, "libUltralightCore.dylib")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(DylibDir, "libUltralight.dylib")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "cacert.pem")));
 
             // The CopyToBinaries function for Mac might need to target the correct location within the .app bundle
             // For now, it copies to <UProjectPath>/Mac/Release as per original.
@@ -168,13 +178,18 @@ public class UltralightUELibrary : ModuleRules
                 Path.Combine(PluginBinariesSoDir, "libUltralight.so")
             });
 
-            RuntimeDependencies.AddRange(new RuntimeDependency[] {
-                new RuntimeDependency(Path.Combine(SoDir, "libWebCore.so")),
-                new RuntimeDependency(Path.Combine(SoDir, "libUltralightCore.so")),
-                new RuntimeDependency(Path.Combine(SoDir, "libUltralight.so")),
-                new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak")),
-                new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "cacert.pem"))
-            });
+            // RuntimeDependencies.AddRange(new RuntimeDependency[] {
+            //     new RuntimeDependency(Path.Combine(SoDir, "libWebCore.so")),
+            //     new RuntimeDependency(Path.Combine(SoDir, "libUltralightCore.so")),
+            //     new RuntimeDependency(Path.Combine(SoDir, "libUltralight.so")),
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak")),
+            //     new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "cacert.pem"))
+            // });
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(SoDir, "libWebCore.so")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(SoDir, "libUltralightCore.so")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(SoDir, "libUltralight.so")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak")));
+            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "cacert.pem")));
 
             CopyToBinaries(Path.Combine(SoDir, "libWebCore.so"), Target);
             CopyToBinaries(Path.Combine(SoDir, "libUltralightCore.so"), Target);
