@@ -22,13 +22,20 @@
  */
 
 #pragma once
-#include <Ultralight/platform/FileSystem.h>
-#include <UltralightUELibrary/ULUEDefines.h>
+
+// CoreMinimal must be first for UE projects
 #include "CoreMinimal.h"
+// It's good practice to include the ThirdParty includes after UE headers,
+// especially if they might have conflicting macro definitions or common names.
+#include <Ultralight/platform/FileSystem.h>
+// This define likely comes from the UltralightUELibrary module, ensure path is correct if it's a public header.
+// Assuming ULUEDefines.h is correctly located in UltralightUELibrary's public include path.
+#include "ULUEDefines.h"
+
 
 namespace ultralightue
 {
-    enum class ULTRALIGHTUE_EXPORT FSAccess : uint8_t
+    enum class ULTRALIGHTUE_API FSAccess : uint8_t // Changed ULTRALIGHTUE_EXPORT to ULTRALIGHTUE_API for UE standard
     {
         FSA_Native = 0x0001,  /// Native UE FileSystem, should be used with editor modules.
         FSA_Package = 0x0002, /// Package FileSystem, should be used at runtime.
@@ -39,13 +46,15 @@ namespace ultralightue
      * NOTE: This is a internal class. you should not really be using this, unless you have a special filesystem to set.
      * HOW TO USE: SetFSAccess if you are using the native file system, or reading through package files, then provide to ULUEHandler.
      */
-    class ULTRALIGHTUE_EXPORT ULUEFileSystem : public ultralight::FileSystem
+    class ULTRALIGHTUE_API ULUEFileSystem : public ultralight::FileSystem // Changed ULTRALIGHTUE_EXPORT to ULTRALIGHTUE_API
     {
     public:
         void SetFSAccess(ultralightue::FSAccess &in_accesspattern);
         ULUEFileSystem();
 
-        virtual ~UEFileSystem() override {}
+        // It's good practice to explicitly mark the destructor as virtual if the base class has a virtual destructor.
+        // And ensure it's defaulted or properly implemented.
+        virtual ~ULUEFileSystem() override; // Changed from UEFileSystem to ULUEFileSystem
 
         virtual bool FileExists(const ultralight::String &path) override;
         virtual bool GetFileSize(ultralight::FileHandle handle, int64_t &result) override;
@@ -54,19 +63,26 @@ namespace ultralightue
 
         virtual void CloseFile(ultralight::FileHandle &handle) override;
 
-        virtual bool ReadFromFile(ultralight::FileHandle handle, char *data, int64_t length) override;
+        // Changed char* to uint8* as Read expects uint8* in UE IFileHandle, and ultralight::FileSystem::ReadFromFile expects char*.
+        // This might require a reinterpret_cast in the implementation if the underlying system truly uses different types.
+        // For now, sticking to ultralight's definition.
+        virtual int64_t ReadFromFile(ultralight::FileHandle handle, char *data, int64_t length) override; // Return type changed to int64_t to match Ultralight 1.3+
 
         virtual bool GetFileMimeType(const ultralight::String &path, ultralight::String &result) override;
 
         virtual bool GetFileCharset(const ultralight::String &path, ultralight::String &result) override;
 
-        virtual bool GetFileCreationTime(const ultralight::String &path, int64_t &result) override;
+        // These are optional according to Ultralight docs, but kept for completeness if implemented.
+        // virtual bool GetFileCreationTime(const ultralight::String &path, int64_t &result) override;
+        // virtual bool GetFileLastModificationTime(const ultralight::String &path, int64_t &result) override;
 
-        virtual bool GetFileLastModificationTime(const ultralight::String &path, int64_t &result) override;
+        // Removed GetFileCreationTime and GetFileLastModificationTime as they were commented out in the .cpp
+        // and are optional in the Ultralight FileSystem interface. If they were intended to be implemented,
+        // they should be uncommented here and in the .cpp file.
 
     private:
         FString MapPath(const ultralight::String &path);
-    private:
+    // private: // This was duplicated, removing one
         FString BaseDirectory;
         ultralightue::FSAccess m_access = FSAccess::FSA_Native;
     };

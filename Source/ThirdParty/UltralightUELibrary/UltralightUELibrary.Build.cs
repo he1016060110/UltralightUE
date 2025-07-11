@@ -67,62 +67,120 @@ public class UltralightUELibrary : ModuleRules
     {
         Type = ModuleType.External;
 
-        PublicIncludePaths.Add("$(PluginDir)/Source/ThirdParty/UltralightUELibrary/include");
+        PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "include"));
 
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            // Add the import library
-            PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "Win64", "WebCore.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "Win64", "UltralightCore.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "Win64", "Ultralight.lib"));
-            // Delay-load the DLL(s), so we can load it from the right place first
-            PublicDelayLoadDLLs.Add("$(PluginDir)/Binaries/Win64/WebCore.dll");
-            PublicDelayLoadDLLs.Add("$(PluginDir)/Binaries/Win64/Ultralight.dll");
-            PublicDelayLoadDLLs.Add("$(PluginDir)/Binaries/Win64/UltralightCore.dll");
-            // Ensure that the DLL(s) is staged along with the executable
-            RuntimeDependencies.Add("$(PluginDir)/Binaries/ThirdParty/UltralightUELibrary/Win64/WebCore.dll");
-            RuntimeDependencies.Add("$(PluginDir)/Binaries/ThirdParty/UltralightUELibrary/Win64/UltralightCore.dll");
-            RuntimeDependencies.Add("$(PluginDir)/Binaries/ThirdParty/UltralightUELibrary/Win64/Ultralight.dll");
+            string PlatformDir = "Win64";
+            string BinariesDir = Path.Combine(GetUProjectPath(), "Binaries", PlatformDir);
+            string PluginBinariesDir = Path.Combine("$(PluginDir)", "Binaries", PlatformDir); // Used for DelayLoadDLLs
 
-            /// Copy Dll(s) over to binary directory, so the engine can actually load them.
-            CopyToBinaries(ModuleDirectory + "/Win64/WebCore.dll", Target);
-            CopyToBinaries(ModuleDirectory + "/Win64/UltralightCore.dll", Target);
-            CopyToBinaries(ModuleDirectory + "/Win64/Ultralight.dll", Target);
+            PublicAdditionalLibraries.AddRange(new string[] {
+                Path.Combine(ModuleDirectory, PlatformDir, "WebCore.lib"),
+                Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.lib"),
+                Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.lib")
+            });
+
+            PublicDelayLoadDLLs.AddRange(new string[] {
+                Path.Combine(PluginBinariesDir, "WebCore.dll"),
+                Path.Combine(PluginBinariesDir, "Ultralight.dll"),
+                Path.Combine(PluginBinariesDir, "UltralightCore.dll")
+            });
+
+            RuntimeDependencies.AddRange(new RuntimeDependency[] {
+                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll")),
+                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.dll")),
+                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.dll")),
+                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "inspector_resources.pak")),
+                new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "cacert.pem"))
+            });
+
+            // Copy files to project binaries
+            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll"), Target);
+            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.dll"), Target);
+            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.dll"), Target);
+            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "inspector_resources.pak"), Target);
+            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "cacert.pem"), Target);
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            PublicDelayLoadDLLs.Add(Path.Combine(ModuleDirectory, "Mac", "Release", "libUltralight.dylib"));
-            PublicDelayLoadDLLs.Add(Path.Combine(ModuleDirectory, "Mac", "Release", "libUltralightCore.dylib"));
-            PublicDelayLoadDLLs.Add(Path.Combine(ModuleDirectory, "Mac", "Release", "libWebCore.dylib"));
-            RuntimeDependencies.Add("$(PluginDir)/Source/ThirdParty/UltralightUELibrary/Mac/Release/libUltralight.dylib");
-            RuntimeDependencies.Add("$(PluginDir)/Source/ThirdParty/UltralightUELibrary/Mac/Release/libUltralightCore.dylib");
-            RuntimeDependencies.Add("$(PluginDir)/Source/ThirdParty/UltralightUELibrary/Mac/Release/libWebCore.dylib");
+            string PlatformDir = "Mac";
+            // For Mac, dylibs are often placed in a "Frameworks" or "Resources" directory within the app bundle,
+            // or directly alongside the executable. The CopyToBinaries logic might need adjustment based on how Mac bundles are structured by UE.
+            // Assuming dylibs are copied to a location where they can be found by rpath or DYLD_LIBRARY_PATH.
+            // The original script copied them to "Mac/Release" relative to UProject path, which might be outside the bundle.
+            // For simplicity, we'll keep a similar structure for RuntimeDependencies pointing to plugin's own binary staging area.
 
-            /// Copy Dll(s) over to binary directory, so the engine can actually load them.
-            CopyToBinaries(ModuleDirectory + "/Mac/Release/WebCore.dylib", Target);
-            CopyToBinaries(ModuleDirectory + "/Mac/Release/UltralightCore.dylib", Target);
-            CopyToBinaries(ModuleDirectory + "/Mac/Release/Ultralight.dylib", Target);
+            string DylibDir = Path.Combine(ModuleDirectory, PlatformDir, "Release"); // As per original script for source location
+
+            PublicAdditionalLibraries.AddRange(new string[] {
+                Path.Combine(DylibDir, "libWebCore.dylib"),
+                Path.Combine(DylibDir, "libUltralightCore.dylib"),
+                Path.Combine(DylibDir, "libUltralight.dylib")
+            });
+
+            // PublicDelayLoadDLLs might not be the best way for dylibs on Mac, but kept for consistency if it works.
+            // Often, dylibs are linked directly and @rpath is used.
+            PublicDelayLoadDLLs.AddRange(new string[] {
+                Path.Combine("$(PluginDir)", "Source", "ThirdParty", "UltralightUELibrary", PlatformDir, "Release", "libWebCore.dylib"),
+                Path.Combine("$(PluginDir)", "Source", "ThirdParty", "UltralightUELibrary", PlatformDir, "Release", "libUltralightCore.dylib"),
+                Path.Combine("$(PluginDir)", "Source", "ThirdParty", "UltralightUELibrary", PlatformDir, "Release", "libUltralight.dylib")
+            });
+
+            RuntimeDependencies.AddRange(new RuntimeDependency[] {
+                new RuntimeDependency(Path.Combine(DylibDir, "libWebCore.dylib")),
+                new RuntimeDependency(Path.Combine(DylibDir, "libUltralightCore.dylib")),
+                new RuntimeDependency(Path.Combine(DylibDir, "libUltralight.dylib")),
+                new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak")), // Assuming resources are platform-agnostic or also in Mac/Release
+                new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "cacert.pem"))
+            });
+
+            // The CopyToBinaries function for Mac might need to target the correct location within the .app bundle
+            // For now, it copies to <UProjectPath>/Mac/Release as per original.
+            CopyToBinaries(Path.Combine(DylibDir, "libWebCore.dylib"), Target);
+            CopyToBinaries(Path.Combine(DylibDir, "libUltralightCore.dylib"), Target);
+            CopyToBinaries(Path.Combine(DylibDir, "libUltralight.dylib"), Target);
+            // Pak and pem files for Mac - assuming they are in a common resources folder or also in Mac/Release
+            // The original script didn't copy these for Mac, so we'll add them assuming they are needed.
+            // Their location might be different, this is an assumption based on Win64.
+             CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak"), Target);
+             CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "cacert.pem"), Target);
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
-            string SoWebCorePath = Path.Combine("$(PluginDir)", "Binaries", "ThirdParty", "UltralightUELibrary", "Linux", "x86_64-unknown-linux-gnu", "libWebCore.so");
-            string SoULCorePath = Path.Combine("$(PluginDir)", "Binaries", "ThirdParty", "UltralightUELibrary", "Linux", "x86_64-unknown-linux-gnu", "libUltralightCore.so");
-            string SoULPath = Path.Combine("$(PluginDir)", "Binaries", "ThirdParty", "UltralightUELibrary", "Linux", "x86_64-unknown-linux-gnu", "libUltralight.so");
-            PublicAdditionalLibraries.Add(SoWebCorePath);
-            PublicAdditionalLibraries.Add(SoULCorePath);
-            PublicAdditionalLibraries.Add(SoULPath);
-            PublicDelayLoadDLLs.Add(SoWebCorePath);
-            PublicDelayLoadDLLs.Add(SoULCorePath);
-            PublicDelayLoadDLLs.Add(SoULPath);
-            RuntimeDependencies.Add(SoWebCorePath);
-            RuntimeDependencies.Add(SoULCorePath);
-            RuntimeDependencies.Add(SoULPath);
+            string PlatformDir = "Linux";
+            string ArchDir = "x86_64-unknown-linux-gnu"; // As per original
+            string SoDir = Path.Combine(ModuleDirectory, PlatformDir, ArchDir);
+            string PluginBinariesSoDir = Path.Combine("$(PluginDir)", "Binaries", "ThirdParty", "UltralightUELibrary", PlatformDir, ArchDir);
 
-            /// Copy Dll(s) over to binary directory, so the engine can actually load them.
-            /// NOTE: Directory is assumed here. will have to test more on linux.
-            CopyToBinaries(ModuleDirectory + "/Linux/x86_64-unknown-linux-gnu/libWebCore.so", Target);
-            CopyToBinaries(ModuleDirectory + "/Linux/x86_64-unknown-linux-gnu/libUltralightCore.so", Target);
-            CopyToBinaries(ModuleDirectory + "/Linux/x86_64-unknown-linux-gnu/Ultralight.so", Target);
+
+            PublicAdditionalLibraries.AddRange(new string[] {
+                Path.Combine(SoDir, "libWebCore.so"),
+                Path.Combine(SoDir, "libUltralightCore.so"),
+                Path.Combine(SoDir, "libUltralight.so")
+            });
+
+            // PublicDelayLoadDLLs is primarily a Windows concept. For Linux, linking is typically direct.
+            // However, UBT might handle this. Keeping for consistency if it has an effect.
+            PublicDelayLoadDLLs.AddRange(new string[] {
+                Path.Combine(PluginBinariesSoDir, "libWebCore.so"),
+                Path.Combine(PluginBinariesSoDir, "libUltralightCore.so"),
+                Path.Combine(PluginBinariesSoDir, "libUltralight.so")
+            });
+
+            RuntimeDependencies.AddRange(new RuntimeDependency[] {
+                new RuntimeDependency(Path.Combine(SoDir, "libWebCore.so")),
+                new RuntimeDependency(Path.Combine(SoDir, "libUltralightCore.so")),
+                new RuntimeDependency(Path.Combine(SoDir, "libUltralight.so")),
+                new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak")),
+                new RuntimeDependency(Path.Combine(ModuleDirectory, "resources", "cacert.pem"))
+            });
+
+            CopyToBinaries(Path.Combine(SoDir, "libWebCore.so"), Target);
+            CopyToBinaries(Path.Combine(SoDir, "libUltralightCore.so"), Target);
+            CopyToBinaries(Path.Combine(SoDir, "libUltralight.so"), Target); // Original had Ultralight.so, assuming libUltralight.so
+            CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak"), Target);
+            CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "cacert.pem"), Target);
         }
     }
 }

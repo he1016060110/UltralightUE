@@ -45,9 +45,17 @@ public class UltralightUE : ModuleRules
             new string[]
             {
                 "Core",
-                "UltralightUELibrary",
+                "CoreUObject",
+                "Engine",
+                "InputCore",
                 "Projects",
-                 "Core", "CoreUObject", "Engine", "InputCore", "PakFile", "RSA" 
+                "RenderCore",
+                "RHI",
+                "Slate",
+                "SlateCore",
+                "UltralightUELibrary",
+                "PakFile",
+                "RSA"
 				// ... add other public dependencies that you statically link with here ...
 			}
             );

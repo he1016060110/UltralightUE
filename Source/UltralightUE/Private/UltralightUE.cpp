@@ -21,12 +21,12 @@
  *   SOFTWARE.
  */
 #include "UltralightUE.h"
-#include <ULUELogInterface.h>
-#include "Core.h"
+#include "ULUELogInterface.h" // Corrected include path
+#include "CoreMinimal.h" // Changed from Core.h for potentially faster compile times
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 #include "Interfaces/IPluginManager.h"
-#include <ThirdParty/UltralightUELibrary/ULUELibrary.h>
+#include "ThirdParty/UltralightUELibrary/ULUELibrary.h" // Corrected include path
 
 
 
