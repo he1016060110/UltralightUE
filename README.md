@@ -5,15 +5,13 @@ Ultralight UI Support for Unreal Engine 4.27.2 +.
 
 **This Project includes Ultralight Binaries & Includes. BY USING THIS LIBRARY, YOU ACCEPT Ultralight's EULA.**
 
-Current Supported Ultralight Version: 1.4.0 - stable
+**Current Supported Ultralight Version: 1.4.0 - stable**
 
 # Unreal Versions
 
 Supported Unreal Engine versions:
 - 5.3
 - 5.5 and Up.
-
-*Initial support for UE 4.27.2+ was mentioned, but the primary focus and current updates are for UE5.*
 
 # Documentation
 
