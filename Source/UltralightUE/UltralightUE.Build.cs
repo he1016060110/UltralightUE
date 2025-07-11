@@ -29,21 +29,18 @@ public class UltralightUE : ModuleRules
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
+        // It's good practice to define PublicIncludePaths before PrivateIncludePaths
         PublicIncludePaths.AddRange(
             new string[] {
-                // Add public include paths required here ...
-                // For example: Path.Combine(ModuleDirectory, "Public")
-                // This allows includes like "ULUEFileSystem.h" if it's in "Public/ULUEFileSystem.h"
-                // However, since ULUEFileSystem.h is in Public/FileSystem, we might need more specific paths or rely on UBT's default Public folder scanning.
+                System.IO.Path.Combine(ModuleDirectory, "Public")
             }
-            );
+        );
 
         PrivateIncludePaths.AddRange(
             new string[] {
-                // Add other private include paths required here ...
-                // For example: Path.Combine(ModuleDirectory, "Private")
+                System.IO.Path.Combine(ModuleDirectory, "Private")
             }
-            );
+        );
 
         PublicDependencyModuleNames.AddRange(
             new string[]
