@@ -28,6 +28,7 @@ public class UltralightUE : ModuleRules
     public UltralightUE(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        PrivatePCHHeaderFile = "Private/UltralightUEPCH.h"; // Added this line
 
         // It's good practice to define PublicIncludePaths before PrivateIncludePaths
         PublicIncludePaths.AddRange(

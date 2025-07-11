@@ -37,8 +37,9 @@
 
 namespace ultralightue
 {
-    // Definition of FSAccess, now using the auto-generated ULTRALIGHTUE_API
-    enum class ULTRALIGHTUE_API FSAccess : uint8_t
+    // Temporarily removing ULTRALIGHTUE_API from enum class to isolate issues.
+    // If ULTRALIGHTUE_API itself is problematic, this will help confirm.
+    enum class FSAccess : uint8_t
     {
         FSA_Native = 0x0001,  /// Native UE FileSystem, should be used with editor modules.
         FSA_Package = 0x0002, /// Package FileSystem, should be used at runtime.
