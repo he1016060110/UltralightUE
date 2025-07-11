@@ -9,7 +9,11 @@ Current Supported Ultralight Version: 1.4.0 - stable
 
 # Unreal Versions
 
-5.5 and Up.
+Supported Unreal Engine versions:
+- 5.3
+- 5.5 and Up.
+
+*Initial support for UE 4.27.2+ was mentioned, but the primary focus and current updates are for UE5.*
 
 # Documentation
 

@@ -1,10 +1,10 @@
-#include
+#include "FileSystem/ULUEFileSystem.h" // Corrected relative path
 
-#include <Ultralight/Ultralight.h>
+#include "Ultralight/Ultralight.h" // This comes from the ThirdParty library
 #include "HAL/PlatformFileManager.h"
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
-#include "ULUEFileSystem.h"
+// Removed duplicate include of "ULUEFileSystem.h"
 
 namespace ultralightue
 {
@@ -58,15 +58,30 @@ namespace ultralightue
             handle = nullptr;
         }
     }
-    bool ULUEFileSystem::ReadFromFile(ultralight::FileHandle handle, char *data, int64_t length)
+    int64_t ULUEFileSystem::ReadFromFile(ultralight::FileHandle handle, char* data, int64_t length)
     {
-        IFileHandle *fileHandle = static_cast<IFileHandle *>(handle);
+        IFileHandle* fileHandle = static_cast<IFileHandle*>(handle);
         if (fileHandle)
         {
-            return fileHandle->Read(reinterpret_cast<uint8_t *>(data), length);
+            // UE's IFileHandle::Read returns bool, but Ultralight's ReadFromFile (version 1.3+) expects int64_t (bytes read).
+            // We need to simulate bytes read. If Read is successful, assume all 'length' bytes were read.
+            // If underlying Read can return actual bytes read, that would be more accurate.
+            if (fileHandle->Read(reinterpret_cast<uint8_t*>(data), length)) {
+                return length; // Assuming full read on success
+            } else {
+                return -1; // Indicate error as per Ultralight docs (negative for error)
+            }
         }
-        return false;
+        return -1; // Indicate error
     }
+
+    // Destructor implementation (if not already present or defaulted in header)
+    ULUEFileSystem::~ULUEFileSystem()
+    {
+        // Cleanup if necessary, though typically not needed for FileSystem interfaces
+        // unless it owns resources that need explicit release not handled by handles.
+    }
+
     bool ULUEFileSystem::GetFileMimeType(const ultralight::String &path, ultralight::String &result)
     {
         FString uePath = FString(path.utf8().data());

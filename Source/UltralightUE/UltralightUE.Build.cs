@@ -28,26 +28,36 @@ public class UltralightUE : ModuleRules
     public UltralightUE(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        PrivatePCHHeaderFile = "Private/UltralightUEPCH.h"; // Added this line
 
+        // It's good practice to define PublicIncludePaths before PrivateIncludePaths
         PublicIncludePaths.AddRange(
             new string[] {
-
+                System.IO.Path.Combine(ModuleDirectory, "Public")
             }
-            );
+        );
 
         PrivateIncludePaths.AddRange(
             new string[] {
-				// ... add other private include paths required here ...
-			}
-            );
+                System.IO.Path.Combine(ModuleDirectory, "Private")
+            }
+        );
 
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
                 "Core",
-                "UltralightUELibrary",
+                "CoreUObject",
+                "Engine",
+                "InputCore",
                 "Projects",
-                 "Core", "CoreUObject", "Engine", "InputCore", "PakFile", "RSA" 
+                "RenderCore",
+                "RHI",
+                "Slate",
+                "SlateCore",
+                "UltralightUELibrary",
+                "PakFile",
+                "RSA"
 				// ... add other public dependencies that you statically link with here ...
 			}
             );

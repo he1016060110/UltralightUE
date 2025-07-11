@@ -24,19 +24,25 @@
 #if defined _WIN32 || defined _WIN64
 #define ULTRALIGHTUE_IMPORT __declspec(dllimport)
 #elif defined __linux__
-#define ULTRALIGHTUE_IMPORT __attribute__((visibility("default")))
+#define ULTRALIGHTUELIBRARY_IMPORT __attribute__((visibility("default")))
 #else
-#define ULTRALIGHTUE_IMPORT
+#define ULTRALIGHTUELIBRARY_IMPORT
 #endif
 
 #if defined _WIN32 || defined _WIN64
-#include <Windows.h>
+#include <Windows.h> // This is generally acceptable in a ThirdParty context if needed by the library itself
+                     // but usually, UE code tries to avoid direct Windows.h includes in public headers.
+                     // If only for dllexport/dllimport, it might be avoidable.
 
-#define ULTRALIGHTUE_EXPORT __declspec(dllexport)
+#define ULTRALIGHTUELIBRARY_EXPORT __declspec(dllexport)
 #else
-#include <stdio.h>
+// #include <stdio.h> // This include seems unlikely to be needed for export macros. Removed.
 #endif
 
-#ifndef ULTRALIGHTUE_EXPORT
-#define ULTRALIGHTUE_EXPORT
+#ifndef ULTRALIGHTUELIBRARY_EXPORT
+#define ULTRALIGHTUELIBRARY_EXPORT
 #endif
+
+// It's crucial that ULTRALIGHTUE_API (for the UltralightUE module) is NOT defined here.
+// UBT will generate it based on the module's .Build.cs and .uplugin settings.
+// Any definition here would conflict.
