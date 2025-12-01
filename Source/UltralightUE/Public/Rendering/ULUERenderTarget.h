@@ -47,11 +47,11 @@ public:
 	virtual ~UULUERenderTarget();
 
 	// Method to initialize with a UE Render Target
-	UFUNCTION(BlueprintCallable, Category = "UltralightUE")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight", meta = (DisplayName = "Initialize Render Target"))
 	void Initialize(UTextureRenderTarget2D* InRenderTarget);
 
 	// Method to get the underlying UE Render Target
-	UFUNCTION(BlueprintPure, Category = "UltralightUE")
+	UFUNCTION(BlueprintPure, Category = "Ultralight", meta = (DisplayName = "Get Render Target"))
 	UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
 
 	// This would be the ultralight::View's RenderTarget, which Ultralight will draw to.

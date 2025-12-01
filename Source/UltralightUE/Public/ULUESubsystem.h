@@ -22,13 +22,13 @@ public:
 	virtual void Deinitialize() override;
 
 	/** Create a view and optionally supply an existing RenderTarget. */
-	UFUNCTION(BlueprintCallable, Category = "Ultralight")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight", meta = (DisplayName = "Create Ultralight View"))
 	UUltralightView* CreateView(int32 Width, int32 Height, bool bTransparent, const FString& InitialURL = TEXT(""), UTextureRenderTarget2D* ExistingTarget = nullptr);
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight", meta = (DisplayName = "Destroy Ultralight View"))
 	void DestroyView(UUltralightView* View);
 
-	UFUNCTION(BlueprintPure, Category = "Ultralight")
+	UFUNCTION(BlueprintPure, Category = "Ultralight", meta = (DisplayName = "Get Ultralight Resource Root"))
 	FString GetResourceRoot() const { return ResourceRoot; }
 
 private:

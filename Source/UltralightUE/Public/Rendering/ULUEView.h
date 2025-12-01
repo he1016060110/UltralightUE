@@ -35,38 +35,38 @@ public:
 	void InitializeNative(TSharedRef<FULUERenderer> InRenderer, const TSharedPtr<FULUEView>& InView);
 	virtual void BeginDestroy() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight", meta = (DisplayName = "Load URL"))
 	void LoadURL(const FString& URL);
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight", meta = (DisplayName = "Load HTML"))
 	void LoadHTML(const FString& HTML, const FString& VirtualURL = TEXT("about:blank"));
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight", meta = (DisplayName = "Resize View"))
 	void Resize(int32 Width, int32 Height);
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight", meta = (DisplayName = "Set Focused"))
 	void SetFocused(bool bFocused);
 
-	UFUNCTION(BlueprintPure, Category = "Ultralight")
+	UFUNCTION(BlueprintPure, Category = "Ultralight", meta = (DisplayName = "Get Render Target"))
 	UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
 
 	// Input helpers
-	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input", meta = (DisplayName = "Inject Mouse Move"))
 	void InjectMouseMove(const FVector2D& Position);
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input", meta = (DisplayName = "Inject Mouse Button"))
 	void InjectMouseButton(const FVector2D& Position, EULUEMouseButton Button, bool bPressed, bool bShift = false, bool bCtrl = false, bool bAlt = false, bool bMeta = false);
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input", meta = (DisplayName = "Inject Scroll"))
 	void InjectScroll(const FVector2D& ScrollDelta, bool bByPage = false, bool bShift = false, bool bCtrl = false, bool bAlt = false, bool bMeta = false);
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input", meta = (DisplayName = "Inject Key Down"))
 	void InjectKeyDown(FKey Key, bool bIsRepeat = false, bool bShift = false, bool bCtrl = false, bool bAlt = false, bool bMeta = false);
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input", meta = (DisplayName = "Inject Key Up"))
 	void InjectKeyUp(FKey Key, bool bShift = false, bool bCtrl = false, bool bAlt = false, bool bMeta = false);
 
-	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input")
+	UFUNCTION(BlueprintCallable, Category = "Ultralight|Input", meta = (DisplayName = "Inject Character"))
 	void InjectChar(const FString& Characters, bool bShift = false, bool bCtrl = false, bool bAlt = false, bool bMeta = false);
 
 	// Release native resources without destroying the UObject (used by subsystem shutdown).
