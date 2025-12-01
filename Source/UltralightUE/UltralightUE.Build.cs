@@ -58,9 +58,8 @@ public class UltralightUE : ModuleRules
                 "UltralightUELibrary",
                 "PakFile",
                 "RSA"
-				// ... add other public dependencies that you statically link with here ...
-			}
-            );
+            }
+        );
 
         PrivateDependencyModuleNames.AddRange(
             new string[]

@@ -20,36 +20,32 @@
  *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *   SOFTWARE.
  */
-#include "UltralightUE/Public/ULUELogInterface.h"
+#include "ULUELogInterface.h"
 #include "Internal/ULUEILoggerInterface.h"
 
-#include "Containers/UnrealString.h"
-#include "Logging/LogMacros.h"
-#include "ULUELogInterface.h"
-
-ultralightue::ULUELogInterface::ULUELogInterface()
+namespace ultralightue
 {
-	if(LoggerInterface == nullptr)
-	{
-		LoggerInterface = new ULUEILoggerInterface();
-	}
-	else
-	{
-		LoggerInterface = nullptr;
-	}
-}
+    ULUELogInterface::ULUELogInterface()
+    {
+        // Create the internal logger interface using MakeUnique for TUniquePtr
+        LoggerInterface = MakeUnique<ULUEILoggerInterface>();
+    }
 
-void ultralightue::ULUELogInterface::LogError(FString details)
-{
+    // Destructor defined here where ULUEILoggerInterface is complete
+    ULUELogInterface::~ULUELogInterface() = default;
 
-}
+    void ULUELogInterface::LogError(FString details)
+    {
+        UE_LOG(LogUltralightUE, Error, TEXT("%s"), *details);
+    }
 
-void ultralightue::ULUELogInterface::LogWarning(FString details)
-{
-	UE_LOG(LogTemp, Warning, TEXT("UltralightUE Warning: %s"), *details);
-}
+    void ULUELogInterface::LogWarning(FString details)
+    {
+        UE_LOG(LogUltralightUE, Warning, TEXT("%s"), *details);
+    }
 
-void ultralightue::ULUELogInterface::LogInfo(FString details)
-{
-	UE_LOG(LogTemp, Log, TEXT("UltralightUE: %s"), *details);
+    void ULUELogInterface::LogInfo(FString details)
+    {
+        UE_LOG(LogUltralightUE, Log, TEXT("%s"), *details);
+    }
 }

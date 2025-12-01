@@ -21,12 +21,13 @@
  *   SOFTWARE.
  */
 #include "UltralightUE.h"
-#include "ULUELogInterface.h" // Corrected include path
-#include "CoreMinimal.h" // Changed from Core.h for potentially faster compile times
+#include "ULUELogInterface.h"
+#include "CoreMinimal.h"
 #include "Misc/Paths.h"
+#include "Misc/MessageDialog.h"
 #include "Modules/ModuleManager.h"
 #include "Interfaces/IPluginManager.h"
-#include "ThirdParty/UltralightUELibrary/ULUELibrary.h" // Corrected include path
+#include "ThirdParty/UltralightUELibrary/ULUELibrary.h"
 
 
 
@@ -93,16 +94,17 @@ bool FUltralightUEModule::CheckUltralightResources(FString& path)
 	/// First get the content directory, and check if uiresources are listed there.
 	if (path.IsEmpty())
 	{
-		path = { FPaths::ProjectContentDir() + "/" + "uicontent" };
+		path = FPaths::ProjectContentDir() / TEXT("uicontent");
 	}
 	if (FPaths::DirectoryExists(path))
 	{
 		/// Looks like we were able to get all needed resources.
 		return true;
 	}
-	else {
-		GetLogInterface()->LogWarning("UltralightUE: Failed to find UIContent! ");
-		return false;
+	
+	if (GetLogInterface())
+	{
+		GetLogInterface()->LogWarning(TEXT("UltralightUE: Failed to find UIContent! "));
 	}
 	return false;
 }

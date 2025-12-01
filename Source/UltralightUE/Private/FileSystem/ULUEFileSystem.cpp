@@ -1,149 +1,171 @@
-#include "FileSystem/ULUEFileSystem.h" // Corrected relative path
+/*
+ *   Copyright (c) 2023 Mikael Aboagye & Ultralight Inc.
+ *   All rights reserved.
+ *   Updated for Ultralight SDK 1.4.0 API compatibility.
+ */
 
-#include "Ultralight/Ultralight.h" // This comes from the ThirdParty library
+#include "FileSystem/ULUEFileSystem.h"
 #include "HAL/PlatformFileManager.h"
 #include "HAL/FileManager.h"
+#include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
-// Removed duplicate include of "ULUEFileSystem.h"
 
 namespace ultralightue
 {
-    void ULUEFileSystem::SetFSAccess(ultralightue::FSAccess &in_accesspattern)
-    {
-        m_access = in_accesspattern;
-    }
-
     ULUEFileSystem::ULUEFileSystem()
+        : BaseDirectory(FPaths::ProjectContentDir())
+        , AccessPattern(FSAccess::FSA_Native)
     {
-        // TODO: Load the base directory from the config file set by the user.
     }
 
-    bool ULUEFileSystem::FileExists(const ultralight::String &path)
-    {
-        FString uePath = MapPath(path);
-        IPlatformFile &platformFile = FPlatformFileManager::Get().GetPlatformFile();
-        return platformFile.FileExists(*uePath);
-    }
-    bool ULUEFileSystem::GetFileSize(ultralight::FileHandle handle, int64_t &result)
-    {
-        IFileHandle *fileHandle = static_cast<IFileHandle *>(handle);
-        if (fileHandle)
-        {
-            result = fileHandle->Size();
-            return true;
-        }
-        return false;
-    }
-    ultralight::FileHandle ULUEFileSystem::OpenFile(const ultralight::String &path, bool open_for_writing)
-    {
-        FString uePath = MapPath(path);
-        IPlatformFile &platformFile = FPlatformFileManager::Get().GetPlatformFile();
-        IFileHandle *handle = nullptr;
-        if (open_for_writing)
-        {
-            handle = platformFile.OpenWrite(*uePath);
-        }
-        else
-        {
-            handle = platformFile.OpenRead(*uePath);
-        }
-        return handle ? static_cast<ultralight::FileHandle>(handle) : nullptr;
-    }
-    void ULUEFileSystem::CloseFile(ultralight::FileHandle &handle)
-    {
-        IFileHandle *fileHandle = static_cast<IFileHandle *>(handle);
-        if (fileHandle)
-        {
-            delete fileHandle; // Unreal Engine requires manual deletion of IFileHandle
-            handle = nullptr;
-        }
-    }
-    int64_t ULUEFileSystem::ReadFromFile(ultralight::FileHandle handle, char* data, int64_t length)
-    {
-        IFileHandle* fileHandle = static_cast<IFileHandle*>(handle);
-        if (fileHandle)
-        {
-            // UE's IFileHandle::Read returns bool, but Ultralight's ReadFromFile (version 1.3+) expects int64_t (bytes read).
-            // We need to simulate bytes read. If Read is successful, assume all 'length' bytes were read.
-            // If underlying Read can return actual bytes read, that would be more accurate.
-            if (fileHandle->Read(reinterpret_cast<uint8_t*>(data), length)) {
-                return length; // Assuming full read on success
-            } else {
-                return -1; // Indicate error as per Ultralight docs (negative for error)
-            }
-        }
-        return -1; // Indicate error
-    }
-
-    // Destructor implementation (if not already present or defaulted in header)
     ULUEFileSystem::~ULUEFileSystem()
     {
-        // Cleanup if necessary, though typically not needed for FileSystem interfaces
-        // unless it owns resources that need explicit release not handled by handles.
     }
 
-    bool ULUEFileSystem::GetFileMimeType(const ultralight::String &path, ultralight::String &result)
+    void ULUEFileSystem::SetFSAccess(FSAccess InAccessPattern)
     {
-        FString uePath = FString(path.utf8().data());
-        if (uePath.EndsWith(TEXT(".html")))
-        {
-            result = ultralight::String("text/html");
-            return true;
-        }
-        else if (uePath.EndsWith(TEXT(".css")))
-        {
-            result = ultralight::String("text/css");
-            return true;
-        }
-        else if (uePath.EndsWith(TEXT(".js")))
-        {
-            result = ultralight::String("application/javascript");
-            return true;
-        }
-        // NOTE/TODO (Mikael A.): We could add more but, these are the most common ones.
-        result = ultralight::String("application/octet-stream");
-        return true;
+        AccessPattern = InAccessPattern;
     }
-    bool ULUEFileSystem::GetFileCharset(const ultralight::String &path, ultralight::String &result)
+
+    void ULUEFileSystem::SetBaseDirectory(const FString& InBaseDirectory)
     {
-        result = ultralight::String("utf-8");
-        return true;
+        BaseDirectory = InBaseDirectory;
     }
-    // (Mikael A.): I mean, i dont think UL will EVER use this, but we can add it for completeness.
-    bool ULUEFileSystem::GetFileCreationTime(const ultralight::String &path, int64_t &result)
+
+    bool ULUEFileSystem::FileExists(const ultralight::String& file_path)
     {
-        FString uePath = MapPath(path);
-        IPlatformFile &platformFile = FPlatformFileManager::Get().GetPlatformFile();
-        FDateTime creationTime;
-        if (platformFile.GetTimeStamp(*uePath, creationTime))
+        FString UEPath = MapPath(file_path);
+        IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+        return PlatformFile.FileExists(*UEPath);
+    }
+
+    ultralight::String ULUEFileSystem::GetFileMimeType(const ultralight::String& file_path)
+    {
+        FString UEPath = FString(UTF8_TO_TCHAR(file_path.utf8().data()));
+        FString Extension = FPaths::GetExtension(UEPath).ToLower();
+        return GetMimeTypeFromExtension(Extension);
+    }
+
+    ultralight::String ULUEFileSystem::GetFileCharset(const ultralight::String& file_path)
+    {
+        // Default to UTF-8 for all text files
+        return ultralight::String("utf-8");
+    }
+
+    ultralight::RefPtr<ultralight::Buffer> ULUEFileSystem::OpenFile(const ultralight::String& file_path)
+    {
+        FString UEPath = MapPath(file_path);
+        IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+        // Check if file exists
+        if (!PlatformFile.FileExists(*UEPath))
         {
-            result = creationTime.ToUnixTimestamp();
-            return true;
+            UE_LOG(LogTemp, Warning, TEXT("ULUEFileSystem::OpenFile - File not found: %s"), *UEPath);
+            return nullptr;
         }
-        return false;
-    }
-    // (Mikael A.): I mean, i dont think UL will EVER use this, but we can add it for completeness.
-    bool ULUEFileSystem::GetFileLastModificationTime(const ultralight::String &path, int64_t &result)
-    {
-        FString uePath = MapPath(path);
-        IPlatformFile &platformFile = FPlatformFileManager::Get().GetPlatformFile();
-        FDateTime modificationTime;
-        if (platformFile.GetTimeStamp(*uePath, modificationTime))
+
+        // Get file size
+        int64 FileSize = PlatformFile.FileSize(*UEPath);
+        if (FileSize <= 0)
         {
-            result = modificationTime.ToUnixTimestamp();
-            return true;
+            UE_LOG(LogTemp, Warning, TEXT("ULUEFileSystem::OpenFile - File is empty or size error: %s"), *UEPath);
+            return nullptr;
         }
-        return false;
+
+        // Read the entire file into memory
+        TArray<uint8> FileData;
+        if (!FFileHelper::LoadFileToArray(FileData, *UEPath))
+        {
+            UE_LOG(LogTemp, Error, TEXT("ULUEFileSystem::OpenFile - Failed to read file: %s"), *UEPath);
+            return nullptr;
+        }
+
+        // Create a Buffer from the file data (makes a copy)
+        return ultralight::Buffer::CreateFromCopy(FileData.GetData(), FileData.Num());
     }
-    // Map Ultralight path to Unreal Engine virtual path
-    FString ULUEFileSystem::MapPath(const ultralight::String& path)
+
+    FString ULUEFileSystem::MapPath(const ultralight::String& path) const
     {
-        FString ultralightPath = FString(path.utf8().data());
+        FString UltralightPath = FString(UTF8_TO_TCHAR(path.utf8().data()));
+        
         // Remove any leading slashes to avoid double slashes
-        if (ultralightPath.StartsWith(TEXT("/")))
+        while (UltralightPath.StartsWith(TEXT("/")))
         {
-            ultralightPath = ultralightPath.Mid(1);
+            UltralightPath = UltralightPath.Mid(1);
         }
-        return BaseDirectory / ultralightPath;
+        
+        return BaseDirectory / UltralightPath;
+    }
+
+    ultralight::String ULUEFileSystem::GetMimeTypeFromExtension(const FString& Extension)
+    {
+        // Common web file types
+        if (Extension == TEXT("html") || Extension == TEXT("htm"))
+        {
+            return ultralight::String("text/html");
+        }
+        else if (Extension == TEXT("css"))
+        {
+            return ultralight::String("text/css");
+        }
+        else if (Extension == TEXT("js"))
+        {
+            return ultralight::String("application/javascript");
+        }
+        else if (Extension == TEXT("json"))
+        {
+            return ultralight::String("application/json");
+        }
+        else if (Extension == TEXT("xml"))
+        {
+            return ultralight::String("application/xml");
+        }
+        else if (Extension == TEXT("svg"))
+        {
+            return ultralight::String("image/svg+xml");
+        }
+        else if (Extension == TEXT("png"))
+        {
+            return ultralight::String("image/png");
+        }
+        else if (Extension == TEXT("jpg") || Extension == TEXT("jpeg"))
+        {
+            return ultralight::String("image/jpeg");
+        }
+        else if (Extension == TEXT("gif"))
+        {
+            return ultralight::String("image/gif");
+        }
+        else if (Extension == TEXT("webp"))
+        {
+            return ultralight::String("image/webp");
+        }
+        else if (Extension == TEXT("ico"))
+        {
+            return ultralight::String("image/x-icon");
+        }
+        else if (Extension == TEXT("woff"))
+        {
+            return ultralight::String("font/woff");
+        }
+        else if (Extension == TEXT("woff2"))
+        {
+            return ultralight::String("font/woff2");
+        }
+        else if (Extension == TEXT("ttf"))
+        {
+            return ultralight::String("font/ttf");
+        }
+        else if (Extension == TEXT("otf"))
+        {
+            return ultralight::String("font/otf");
+        }
+        else if (Extension == TEXT("txt"))
+        {
+            return ultralight::String("text/plain");
+        }
+        
+        // Default to binary stream for unknown types
+        return ultralight::String("application/octet-stream");
     }
 }

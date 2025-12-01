@@ -26,27 +26,36 @@
 #include "CoreMinimal.h"
 #include "Templates/UniquePtr.h"
 
+// Forward declare log category (defined in ULUEILoggerInterface.cpp)
+DECLARE_LOG_CATEGORY_EXTERN(LogUltralightUE, Log, All);
+
 namespace ultralightue
 {
+    // Forward declaration
+    class ULUEILoggerInterface;
+
     /// @brief Simple class for developers to assign logging interfaces to the plugin.
     /// NOTE: By default, the plugin will log to the console like normal, using color codes like: red, yellow, and white.
-    class ULUELogInterface
+    class ULTRALIGHTUE_API ULUELogInterface
     {
-        public:
+    public:
+        ULUELogInterface();
+        // Destructor must be defined in cpp file where ULUEILoggerInterface is complete
+        virtual ~ULUELogInterface();
 
-            ULUELogInterface();
-            /// @brief Logs a error within the developer defined interface.
-            /// @param details What the error message will contain.
-            virtual void LogError(FString details);
+        /// @brief Logs an error within the developer defined interface.
+        /// @param details What the error message will contain.
+        virtual void LogError(FString details);
 
-            /// @brief Logs a warning within the developer defined interface.
-            /// @param details What the warning message will contain.
-            virtual void LogWarning(FString details);
+        /// @brief Logs a warning within the developer defined interface.
+        /// @param details What the warning message will contain.
+        virtual void LogWarning(FString details);
 
-            /// @brief Logs a info within the developer defined interface.
-            /// @param details What the info message will contain.            
-            virtual void LogInfo(FString details);
-        private:
-            TUniquePtr<class ULUEILoggerInterface> LoggerInterface;
+        /// @brief Logs info within the developer defined interface.
+        /// @param details What the info message will contain.
+        virtual void LogInfo(FString details);
+
+    private:
+        TUniquePtr<ULUEILoggerInterface> LoggerInterface;
     };
 }

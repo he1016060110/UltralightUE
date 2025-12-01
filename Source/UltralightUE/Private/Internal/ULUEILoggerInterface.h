@@ -23,18 +23,23 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include <Ultralight/platform/Logger.h>
+// Include the public header for the log category declaration
+#include "ULUELogInterface.h"
 
 namespace ultralightue
 {
-    class ILogInterface : public utralight::Logger
+    /// @brief Internal logger interface implementation for Ultralight SDK 1.4.0
+    class ULUEILoggerInterface : public ultralight::Logger
     {
     public:
-        virtual ~ILogInterface() = default;
+        ULUEILoggerInterface() = default;
+        virtual ~ULUEILoggerInterface() override = default;
 
-        /// @brief Logs a error within the developer defined interface.
+        /// @brief Logs a message within the Unreal Engine logging system.
         /// @param log_level The level of the log message.
-        /// @param message What the error message will contain.
-        virtual void LogMessage(ultralight::LogLevel log_level, const ultralight::String &message) = 0;
+        /// @param message What the message will contain.
+        virtual void LogMessage(ultralight::LogLevel log_level, const ultralight::String& message) override;
     };
 }

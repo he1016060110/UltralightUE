@@ -22,9 +22,9 @@
  */
 
 #pragma once
+#include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
-#include "../../PakFile/Public/IPlatformFilePak.h"
-
+#include "IPlatformFilePak.h"
 
 namespace ultralightue
 {
