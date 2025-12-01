@@ -68,7 +68,22 @@ void UULUERenderTarget::OnUltralightDraw(ultralight::Bitmap* Bitmap)
         return;
     }
 
-    FMemory::Memcpy(PixelData.GetData(), LockedPixels, TotalSize);
+    // Ultralight uses BGRA, UE uses RGBA - need to swap R and B channels
+    const uint8* SourcePixels = static_cast<const uint8*>(LockedPixels);
+    const uint32 PixelCount = Bitmap->width() * Bitmap->height();
+
+    for (uint32 i = 0; i < PixelCount; ++i)
+    {
+        const uint32 SrcOffset = i * 4;
+        const uint32 DstOffset = i * 4;
+
+        // Swap B and R (BGRA -> RGBA)
+        PixelData[DstOffset + 0] = SourcePixels[SrcOffset + 2]; // R = B
+        PixelData[DstOffset + 1] = SourcePixels[SrcOffset + 1]; // G = G
+        PixelData[DstOffset + 2] = SourcePixels[SrcOffset + 0]; // B = R
+        PixelData[DstOffset + 3] = SourcePixels[SrcOffset + 3]; // A = A
+    }
+
     Bitmap->UnlockPixels();
 
     // Upload to render target on the render thread

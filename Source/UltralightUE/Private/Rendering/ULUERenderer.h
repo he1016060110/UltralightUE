@@ -14,6 +14,11 @@
 class UTextureRenderTarget2D;
 class UULUERenderTarget;
 
+namespace ultralightue
+{
+	class ULUEGPUDriver;
+}
+
 /**
  * Internal Ultralight View wrapper. Copies bitmap surfaces into a UE render target.
  */
@@ -44,6 +49,7 @@ private:
 	ultralight::RefPtr<ultralight::View> View;
 	TWeakObjectPtr<UULUERenderTarget> Target;
 	FIntPoint Size;
+	int32 FramesSinceCreation = 0;
 };
 
 /**
@@ -67,6 +73,7 @@ private:
 
     TUniquePtr<ultralightue::ULUEFileSystem> FileSystem;
     TUniquePtr<ultralightue::ULUELogInterface> OwnedLogInterface;
+    TUniquePtr<ultralightue::ULUEGPUDriver> GPUDriver;
     ultralightue::ULUEILoggerInterface* LoggerBridge = nullptr;
 
 	ultralight::RefPtr<ultralight::Renderer> Renderer;

@@ -5,6 +5,7 @@
 
 #include "Rendering/ULUERenderer.h"
 #include "Rendering/ULUERenderTarget.h"
+#include "Rendering/ULUEGPUDriver.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
@@ -45,6 +46,7 @@ void FULUEView::LoadURL(const FString& URL)
 {
 	if (View)
 	{
+		UE_LOG(LogUltralightUE, Log, TEXT("Loading URL: %s"), *URL);
 		View->LoadURL(ToUltralightString(URL));
 	}
 }
@@ -53,6 +55,7 @@ void FULUEView::LoadHTML(const FString& HTML, const FString& VirtualURL)
 {
 	if (View)
 	{
+		UE_LOG(LogUltralightUE, Log, TEXT("Loading HTML (VirtualURL: %s, Length: %d)"), *VirtualURL, HTML.Len());
 		View->LoadHTML(ToUltralightString(HTML), ToUltralightString(VirtualURL), true);
 	}
 }
@@ -153,7 +156,19 @@ UULUERenderTarget* FULUEView::GetRenderTargetWrapper() const
 void FULUEView::CopySurfaceToTarget()
 {
 	ultralight::Surface* Surface = View->surface();
-	if (!Surface || Surface->dirty_bounds().IsEmpty())
+	if (!Surface)
+	{
+		return;
+	}
+
+	// Check if there's anything to paint
+	bool bHasDirtyBounds = !Surface->dirty_bounds().IsEmpty();
+
+	// Always try to render on first few frames or when dirty
+	bool bForceRender = (FramesSinceCreation < 30); // Force render for first 30 frames
+	FramesSinceCreation++;
+
+	if (!bHasDirtyBounds && !bForceRender)
 	{
 		return;
 	}
@@ -168,6 +183,14 @@ void FULUEView::CopySurfaceToTarget()
 	if (Bitmap && Target.IsValid())
 	{
 		Target->OnUltralightDraw(Bitmap.get());
+		if (bForceRender && !bHasDirtyBounds)
+		{
+			UE_LOG(LogUltralightUE, Verbose, TEXT("Force rendered frame %d (no dirty bounds)"), FramesSinceCreation);
+		}
+		else if (bHasDirtyBounds)
+		{
+			UE_LOG(LogUltralightUE, Verbose, TEXT("Rendered frame with dirty bounds"));
+		}
 	}
 
 	Surface->ClearDirtyBounds();
@@ -203,6 +226,9 @@ bool FULUERenderer::Initialize(const FString& PluginBaseDir, FSAccess AccessPatt
 	}
 	LoggerBridge = InLogInterface ? InLogInterface->GetLogger() : nullptr;
 
+	// Create minimal GPU driver (required even for CPU rendering)
+	GPUDriver = MakeUnique<ultralightue::ULUEGPUDriver>();
+
 	auto& Platform = ultralight::Platform::instance();
 
 	ultralight::Config Config;
@@ -213,6 +239,7 @@ bool FULUERenderer::Initialize(const FString& PluginBaseDir, FSAccess AccessPatt
 
 	Platform.set_font_loader(ultralight::GetPlatformFontLoader());
 	Platform.set_file_system(FileSystem.Get());
+	Platform.set_gpu_driver(GPUDriver.Get());
 	Platform.set_surface_factory(ultralight::GetBitmapSurfaceFactory());
 
 	if (LoggerBridge)
@@ -223,27 +250,43 @@ bool FULUERenderer::Initialize(const FString& PluginBaseDir, FSAccess AccessPatt
 	Renderer = ultralight::Renderer::Create();
 	Session = Renderer ? Renderer->default_session() : nullptr;
 
+	UE_LOG(LogUltralightUE, Log, TEXT("Ultralight Renderer initialized: %s"), Renderer.get() ? TEXT("Success") : TEXT("Failed"));
+
 	return Renderer.get() != nullptr;
 }
 
 void FULUERenderer::Tick(float DeltaTime)
 {
-	if (!Renderer.get())
+	if (!Renderer.get() || !Session.get())
 	{
 		return;
 	}
 
-	Renderer->Update();
-	Renderer->RefreshDisplay(0);
-	Renderer->Render();
-
+	// Prune dead views first
 	PruneDeadViews();
+
+	// Only tick renderer if we have active views
+	if (Views.Num() == 0)
+	{
+		return;
+	}
+
+	// Safely update renderer
+	Renderer->Update();
+
+	// Paint each view
 	for (const TWeakPtr<FULUEView>& WeakView : Views)
 	{
 		if (TSharedPtr<FULUEView> View = WeakView.Pin())
 		{
 			View->PaintIfNeeded();
 		}
+	}
+
+	// Only render if we have views
+	if (Views.Num() > 0)
+	{
+		Renderer->Render();
 	}
 }
 
@@ -255,13 +298,17 @@ void FULUERenderer::Shutdown()
 
 	auto& Platform = ultralight::Platform::instance();
 	Platform.set_file_system(nullptr);
+	Platform.set_gpu_driver(nullptr);
 	Platform.set_logger(nullptr);
 	Platform.set_font_loader(nullptr);
 	Platform.set_surface_factory(nullptr);
 
 	FileSystem.Reset();
+	GPUDriver.Reset();
 	OwnedLogInterface.Reset();
 	LoggerBridge = nullptr;
+
+	UE_LOG(LogUltralightUE, Log, TEXT("Ultralight Renderer shut down"));
 }
 
 TSharedPtr<FULUEView> FULUERenderer::CreateView(const FIntPoint& Size, bool bTransparent, const FString& InitialURL, UObject* Outer, UTextureRenderTarget2D* ExistingRenderTarget)
