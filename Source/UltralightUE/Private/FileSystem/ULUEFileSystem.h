@@ -57,6 +57,9 @@ namespace ultralightue
         /// Set the base directory for file operations
         void SetBaseDirectory(const FString& InBaseDirectory);
 
+        /// Set the resource directory (defaults to BaseDirectory). Used to serve Ultralight internal assets.
+        void SetResourceDirectory(const FString& InResourceDirectory);
+
         //~ Begin ultralight::FileSystem Interface
         
         /// Check if a file exists within the file system.
@@ -81,6 +84,7 @@ namespace ultralightue
         static ultralight::String GetMimeTypeFromExtension(const FString& Extension);
 
         FString BaseDirectory;
+        FString ResourceDirectory;
         FSAccess AccessPattern = FSAccess::FSA_Native;
     };
 }

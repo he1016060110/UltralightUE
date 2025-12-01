@@ -48,4 +48,9 @@ namespace ultralightue
     {
         UE_LOG(LogUltralightUE, Log, TEXT("%s"), *details);
     }
+
+    ULUEILoggerInterface* ULUELogInterface::GetLogger() const
+    {
+        return LoggerInterface.Get();
+    }
 }

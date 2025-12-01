@@ -14,6 +14,7 @@ namespace ultralightue
 {
     ULUEFileSystem::ULUEFileSystem()
         : BaseDirectory(FPaths::ProjectContentDir())
+        , ResourceDirectory(BaseDirectory)
         , AccessPattern(FSAccess::FSA_Native)
     {
     }
@@ -30,6 +31,15 @@ namespace ultralightue
     void ULUEFileSystem::SetBaseDirectory(const FString& InBaseDirectory)
     {
         BaseDirectory = InBaseDirectory;
+        if (ResourceDirectory.IsEmpty())
+        {
+            ResourceDirectory = BaseDirectory;
+        }
+    }
+
+    void ULUEFileSystem::SetResourceDirectory(const FString& InResourceDirectory)
+    {
+        ResourceDirectory = InResourceDirectory;
     }
 
     bool ULUEFileSystem::FileExists(const ultralight::String& file_path)
@@ -94,6 +104,12 @@ namespace ultralightue
             UltralightPath = UltralightPath.Mid(1);
         }
         
+        // Ultralight built-in resources (cacert/icu data) are expected under the resource directory.
+        if (UltralightPath.StartsWith(TEXT("resources")))
+        {
+            return ResourceDirectory / UltralightPath;
+        }
+
         return BaseDirectory / UltralightPath;
     }
 

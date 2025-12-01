@@ -56,3 +56,27 @@ SOFTWARE.
 
 Ultralight (C), "Ultralight UI" are trademarks of Ultralight Inc. All Rights Reserved.
 ```
+
+# UE5 Runtime Integration (added)
+
+- Ultralight DLLs are loaded automatically by the plugin module.
+- `UUltralightSubsystem` owns the renderer, ticks it via FTSTicker, and exposes `CreateView`.
+- `UUltralightView` wraps an Ultralight view and renders into a `UTextureRenderTarget2D`.
+- Input helpers are provided on `UUltralightView` for mouse/keyboard/scroll forwarding.
+- `ULUEFileSystem` now understands a UI content root and a dedicated resource root for Ultralight data.
+
+## Quick start
+
+1) Place your UI files under `Content/uicontent` (the subsystem creates the folder if missing).  
+2) Make sure the plugin's packaged resources stay untouched (`Plugins/UltralightUE/Source/ThirdParty/UltralightUELibrary/resources`).  
+3) From code or Blueprint, get `UltralightSubsystem` (`GetGameInstanceSubsystem`).  
+4) Call `CreateView(Width, Height, bTransparent, InitialURL)`; keep the returned `UUltralightView`.  
+5) Use `GetRenderTarget()` from the view in a material/UMG brush.  
+6) Forward input: `InjectMouseMove`, `InjectMouseButton`, `InjectScroll`, `InjectKeyDown/Up`, `InjectChar`.  
+7) Call `DestroyView` on the subsystem or let the UObject be GC'd when done.
+
+## Rendering details
+
+- CPU renderer path is used (no GPU driver required) and surfaces are copied into the render target each tick.
+- Dirty rects are respected via Ultralight surfaces; uploads only happen when the view reports changes.
+- Cache directory: `<Project>/Saved/UltralightCache`.

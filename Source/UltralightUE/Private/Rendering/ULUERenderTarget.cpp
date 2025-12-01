@@ -6,6 +6,11 @@
 
 #include "Rendering/ULUERenderTarget.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Engine/TextureRenderTarget.h"
+#include "TextureResource.h"
+#include "RenderingThread.h"
+#include "RHICommandList.h"
+#include "ULUEUltralightIncludes.h"
 
 UULUERenderTarget::UULUERenderTarget()
     : RenderTarget(nullptr)
@@ -26,6 +31,7 @@ void UULUERenderTarget::Initialize(UTextureRenderTarget2D* InRenderTarget)
     {
         Width = RenderTarget->SizeX;
         Height = RenderTarget->SizeY;
+        RenderTarget->UpdateResourceImmediate(true);
     }
 }
 
@@ -35,12 +41,60 @@ void UULUERenderTarget::OnUltralightDraw(ultralight::Bitmap* Bitmap)
     {
         return;
     }
-    
-    // TODO: Implement bitmap data transfer from Ultralight to UE texture
-    // This would typically involve:
-    // 1. Locking the Ultralight bitmap pixels
-    // 2. Updating the UE render target with the pixel data
-    // 3. Unlocking the bitmap
+
+    // Resize the RT if Ultralight resized
+    if (RenderTarget->SizeX != static_cast<int32>(Bitmap->width()) ||
+        RenderTarget->SizeY != static_cast<int32>(Bitmap->height()))
+    {
+        Width = Bitmap->width();
+        Height = Bitmap->height();
+        RenderTarget->ResizeTarget(Width, Height);
+        RenderTarget->UpdateResourceImmediate(false);
+    }
+
+    // Copy pixel data out before unlocking (Ultralight requires this)
+    const uint32 SourceRowBytes = Bitmap->row_bytes();
+    const SIZE_T TotalSize = static_cast<SIZE_T>(SourceRowBytes) * static_cast<SIZE_T>(Bitmap->height());
+    if (TotalSize == 0)
+    {
+        return;
+    }
+    PixelData.SetNumUninitialized(TotalSize);
+
+    const void* LockedPixels = Bitmap->LockPixels();
+    if (!LockedPixels)
+    {
+        PixelData.Reset();
+        return;
+    }
+
+    FMemory::Memcpy(PixelData.GetData(), LockedPixels, TotalSize);
+    Bitmap->UnlockPixels();
+
+    // Upload to render target on the render thread
+    FTextureRenderTargetResource* TargetResource = RenderTarget->GameThread_GetRenderTargetResource();
+    if (!TargetResource)
+    {
+        PixelData.Reset();
+        return;
+    }
+
+    const uint32 CopyWidth = Bitmap->width();
+    const uint32 CopyHeight = Bitmap->height();
+    TArray<uint8> PixelCopy = PixelData; // copy for thread safety
+
+    ENQUEUE_RENDER_COMMAND(CopyUltralightToRT)(
+        [TargetResource, PixelCopy = MoveTemp(PixelCopy), SourceRowBytes, CopyWidth, CopyHeight](FRHICommandListImmediate& RHICmdList) mutable
+        {
+            FRHITexture* TextureRHI = TargetResource->GetRenderTargetTexture();
+            if (!TextureRHI || PixelCopy.Num() == 0)
+            {
+                return;
+            }
+
+            const FUpdateTextureRegion2D UpdateRegion(0, 0, 0, 0, CopyWidth, CopyHeight);
+            RHICmdList.UpdateTexture2D(TextureRHI, 0, UpdateRegion, SourceRowBytes, PixelCopy.GetData());
+        });
 }
 
 void UULUERenderTarget::UpdateUETexture()
@@ -50,7 +104,6 @@ void UULUERenderTarget::UpdateUETexture()
         return;
     }
     
-    // TODO: Implement texture update logic
-    // This would use RenderTarget->UpdateResource() or similar
+    // Legacy helper kept for compatibility; OnUltralightDraw enqueues the render-thread update.
+    RenderTarget->UpdateResourceImmediate(false);
 }
-

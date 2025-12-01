@@ -55,6 +55,9 @@ namespace ultralightue
         /// @param details What the info message will contain.
         virtual void LogInfo(FString details);
 
+        /// @brief Returns the internal Ultralight logger used to bridge to UE logging.
+        class ULUEILoggerInterface* GetLogger() const;
+
     private:
         TUniquePtr<ULUEILoggerInterface> LoggerInterface;
     };
