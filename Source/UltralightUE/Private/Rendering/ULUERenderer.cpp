@@ -155,6 +155,11 @@ UULUERenderTarget* FULUEView::GetRenderTargetWrapper() const
 
 void FULUEView::CopySurfaceToTarget()
 {
+	if (!View)
+	{
+		return;
+	}
+
 	ultralight::Surface* Surface = View->surface();
 	if (!Surface)
 	{
@@ -173,6 +178,7 @@ void FULUEView::CopySurfaceToTarget()
 		return;
 	}
 
+	// Safely cast to BitmapSurface
 	auto* BitmapSurface = static_cast<ultralight::BitmapSurface*>(Surface);
 	if (!BitmapSurface)
 	{
@@ -180,17 +186,9 @@ void FULUEView::CopySurfaceToTarget()
 	}
 
 	ultralight::RefPtr<ultralight::Bitmap> Bitmap = BitmapSurface->bitmap();
-	if (Bitmap && Target.IsValid())
+	if (Bitmap && Bitmap.get() && Target.IsValid())
 	{
 		Target->OnUltralightDraw(Bitmap.get());
-		if (bForceRender && !bHasDirtyBounds)
-		{
-			UE_LOG(LogUltralightUE, Verbose, TEXT("Force rendered frame %d (no dirty bounds)"), FramesSinceCreation);
-		}
-		else if (bHasDirtyBounds)
-		{
-			UE_LOG(LogUltralightUE, Verbose, TEXT("Rendered frame with dirty bounds"));
-		}
 	}
 
 	Surface->ClearDirtyBounds();
@@ -273,20 +271,16 @@ void FULUERenderer::Tick(float DeltaTime)
 
 	// Safely update renderer
 	Renderer->Update();
+	Renderer->Render();
 
-	// Paint each view
-	for (const TWeakPtr<FULUEView>& WeakView : Views)
+	// Paint each view - copy views array to avoid issues during iteration
+	TArray<TWeakPtr<FULUEView>> ViewsCopy = Views;
+	for (const TWeakPtr<FULUEView>& WeakView : ViewsCopy)
 	{
 		if (TSharedPtr<FULUEView> View = WeakView.Pin())
 		{
 			View->PaintIfNeeded();
 		}
-	}
-
-	// Only render if we have views
-	if (Views.Num() > 0)
-	{
-		Renderer->Render();
 	}
 }
 
@@ -332,9 +326,9 @@ TSharedPtr<FULUEView> FULUERenderer::CreateView(const FIntPoint& Size, bool bTra
 	if (!RenderTarget)
 	{
 		RenderTarget = NewObject<UTextureRenderTarget2D>(Outer);
-		RenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
 		RenderTarget->ClearColor = FLinearColor::Transparent;
-		RenderTarget->InitAutoFormat(Size.X, Size.Y);
+		// Use PF_B8G8R8A8 to directly match Ultralight's native BGRA output
+		RenderTarget->InitCustomFormat(Size.X, Size.Y, PF_B8G8R8A8, false);
 		RenderTarget->UpdateResourceImmediate(true);
 	}
 
