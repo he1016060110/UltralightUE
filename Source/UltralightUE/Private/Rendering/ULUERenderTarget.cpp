@@ -68,9 +68,34 @@ void UULUERenderTarget::OnUltralightDraw(ultralight::Bitmap* Bitmap)
         return;
     }
 
-    // Ultralight outputs BGRA format, RenderTarget is PF_B8G8R8A8 (also BGRA)
-    // Direct copy - no color channel swapping needed
-    FMemory::Memcpy(PixelData.GetData(), LockedPixels, TotalSize);
+    // Ultralight outputs BGRA format (4 bytes per pixel)
+    // The image appears to be both horizontally and vertically flipped
+    // Perform 180-degree rotation: flip both rows and pixels within each row
+    const uint8* SrcPixels = static_cast<const uint8*>(LockedPixels);
+    uint8* DstPixels = PixelData.GetData();
+
+    const uint32 PixelSize = 4; // BGRA = 4 bytes per pixel
+    const uint32 PixelsPerRow = SourceRowBytes / PixelSize;
+
+    // Start from last row, last pixel
+    for (uint32 Row = 0; Row < Height; ++Row)
+    {
+        const uint8* SrcRow = SrcPixels + (Height - 1 - Row) * SourceRowBytes; // Last row first
+        uint8* DstRow = DstPixels + Row * SourceRowBytes;
+
+        // Copy pixels in reverse order within each row
+        for (uint32 Col = 0; Col < PixelsPerRow; ++Col)
+        {
+            const uint8* SrcPixel = SrcRow + (PixelsPerRow - 1 - Col) * PixelSize; // Last pixel first
+            uint8* DstPixel = DstRow + Col * PixelSize;
+
+            // Copy 4 bytes (BGRA)
+            DstPixel[0] = SrcPixel[0]; // B
+            DstPixel[1] = SrcPixel[1]; // G
+            DstPixel[2] = SrcPixel[2]; // R
+            DstPixel[3] = SrcPixel[3]; // A
+        }
+    }
 
     Bitmap->UnlockPixels();
 
