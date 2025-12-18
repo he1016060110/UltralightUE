@@ -82,6 +82,8 @@ public:
 	FString UltralightCoreLibraryPath;
 	/// @brief Ultralight Library Path.
 	FString UltralightLibraryPath;
+	/// @brief AppCore Library Path (Mac/Linux).
+	FString AppCoreLibraryPath;
 
 private:
 	/// @brief Destroys the Ultralight DLL handles. This should ONLY be called at shutdown.
@@ -98,4 +100,7 @@ private:
 
 	/// @brief WebCore DLL Handle.
 	void *WebCoreHandle;
+
+	/// @brief AppCore DLL Handle (Mac/Linux).
+	void *AppCoreHandle = nullptr;
 };

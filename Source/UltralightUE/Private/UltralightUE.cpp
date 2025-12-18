@@ -65,19 +65,66 @@ void FUltralightUEModule::StartupModule()
 		UltralightLibraryPath = FPaths::Combine(*ExeDir, TEXT("Ultralight.dll"));
 	}
 #elif PLATFORM_MAC
-	WebCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Mac/Release/libUltralight.dylib"));
+	// First try plugin Source directory (for editor)
+	WebCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Mac/Release/libWebCore.dylib"));
 	UltralightCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Mac/Release/libUltralightCore.dylib"));
-	UltralightLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Mac/Release/libWebCore.dylib"));
+	UltralightLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Mac/Release/libUltralight.dylib"));
+	AppCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Mac/Release/libAppCore.dylib"));
+	
+	// If not found, try executable directory (for packaged builds)
+	if (!FPaths::FileExists(WebCoreLibraryPath))
+	{
+		FString ExeDir = FPlatformProcess::GetModulesDirectory();
+		WebCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libWebCore.dylib"));
+		UltralightCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libUltralightCore.dylib"));
+		UltralightLibraryPath = FPaths::Combine(*ExeDir, TEXT("libUltralight.dylib"));
+		AppCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libAppCore.dylib"));
+	}
+	
+	// Also try the directory where the executable is located
+	if (!FPaths::FileExists(WebCoreLibraryPath))
+	{
+		FString ExeDir = FPaths::GetPath(FPlatformProcess::ExecutablePath());
+		WebCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libWebCore.dylib"));
+		UltralightCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libUltralightCore.dylib"));
+		UltralightLibraryPath = FPaths::Combine(*ExeDir, TEXT("libUltralight.dylib"));
+		AppCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libAppCore.dylib"));
+	}
 #elif PLATFORM_LINUX
-	AppCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/UltralightUELibrary/Linux/x86_64-unknown-linux-gnu/libWebCore.so"));
-	WebCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/UltralightUELibrary/Linux/x86_64-unknown-linux-gnu/libUltralightCore.so"));
-	UltralightCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/ThirdParty/UltralightUELibrary/Linux/x86_64-unknown-linux-gnu/libUltralight.so"));
+	// First try plugin Source directory (for editor)
+	WebCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Linux/x86_64-unknown-linux-gnu/libWebCore.so"));
+	UltralightCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Linux/x86_64-unknown-linux-gnu/libUltralightCore.so"));
+	UltralightLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Linux/x86_64-unknown-linux-gnu/libUltralight.so"));
+	AppCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Linux/x86_64-unknown-linux-gnu/libAppCore.so"));
+	
+	// If not found, try executable directory (for packaged builds)
+	if (!FPaths::FileExists(WebCoreLibraryPath))
+	{
+		FString ExeDir = FPlatformProcess::GetModulesDirectory();
+		WebCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libWebCore.so"));
+		UltralightCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libUltralightCore.so"));
+		UltralightLibraryPath = FPaths::Combine(*ExeDir, TEXT("libUltralight.so"));
+		AppCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libAppCore.so"));
+	}
+	
+	// Also try the directory where the executable is located
+	if (!FPaths::FileExists(WebCoreLibraryPath))
+	{
+		FString ExeDir = FPaths::GetPath(FPlatformProcess::ExecutablePath());
+		WebCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libWebCore.so"));
+		UltralightCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libUltralightCore.so"));
+		UltralightLibraryPath = FPaths::Combine(*ExeDir, TEXT("libUltralight.so"));
+		AppCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("libAppCore.so"));
+	}
 #endif // PLATFORM_WINDOWS
 	/// Assign handles to Library(s) path(s).
 	WebCoreHandle = !WebCoreLibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*WebCoreLibraryPath) : nullptr;
 	UltralightCoreHandle = !UltralightCoreLibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*UltralightCoreLibraryPath) : nullptr;
 	UltralightHandle = !UltralightLibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*UltralightLibraryPath) : nullptr;
-
+	
+#if PLATFORM_MAC || PLATFORM_LINUX
+	AppCoreHandle = !AppCoreLibraryPath.IsEmpty() ? FPlatformProcess::GetDllHandle(*AppCoreLibraryPath) : nullptr;
+	// On Mac/Linux, AppCore is optional but recommended
 	if (WebCoreHandle && UltralightCoreHandle && UltralightHandle)
 	{
 		// Startup Ultralight engine.
@@ -87,6 +134,17 @@ void FUltralightUEModule::StartupModule()
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UltralightUE: Error", "Failed to load UltralightUE! Please check the log for any messages. if you cant fix the issue, create a issue on github! (https://github.com/JailbreakPapa/UltralightUE)"));
 	}
+#else
+	if (WebCoreHandle && UltralightCoreHandle && UltralightHandle)
+	{
+		// Startup Ultralight engine.
+		ultralightue::NotifyUltralightUEStartup();
+	}
+	else
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("UltralightUE: Error", "Failed to load UltralightUE! Please check the log for any messages. if you cant fix the issue, create a issue on github! (https://github.com/JailbreakPapa/UltralightUE)"));
+	}
+#endif
 }
 
 void FUltralightUEModule::ShutdownModule()
@@ -143,6 +201,10 @@ void FUltralightUEModule::DestroyUltralightHandles()
 	FPlatformProcess::FreeDllHandle(UltralightHandle);
 	FPlatformProcess::FreeDllHandle(UltralightCoreHandle);
 	FPlatformProcess::FreeDllHandle(WebCoreHandle);
+#if PLATFORM_MAC || PLATFORM_LINUX
+	FPlatformProcess::FreeDllHandle(AppCoreHandle);
+	AppCoreHandle = nullptr;
+#endif
 	UltralightHandle = nullptr;
 	UltralightCoreHandle = nullptr;
 	WebCoreHandle = nullptr;
