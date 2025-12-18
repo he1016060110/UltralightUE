@@ -31,7 +31,9 @@ public class UltralightUELibrary : ModuleRules
 
     public string GetUProjectPath()
     {
-        return Directory.GetParent(ModuleDirectory).Parent.Parent.ToString();
+        // ModuleDirectory = Plugins\UltralightUE\Source\ThirdParty\UltralightUELibrary
+        // Need to go up 5 levels to reach project root
+        return Directory.GetParent(ModuleDirectory).Parent.Parent.Parent.Parent.ToString();
     }
 
     private void CopyToBinaries(string Filepath, ReadOnlyTargetRules Target)
@@ -60,8 +62,8 @@ public class UltralightUELibrary : ModuleRules
         if (!Directory.Exists(binariesDir))
             Directory.CreateDirectory(binariesDir);
 
-        if (!File.Exists(Path.Combine(binariesDir, filename)))
-            File.Copy(Filepath, Path.Combine(binariesDir, filename), true);
+        // Always copy to ensure DLLs are up to date
+        File.Copy(Filepath, Path.Combine(binariesDir, filename), true);
     }
     public UltralightUELibrary(ReadOnlyTargetRules Target) : base(Target)
     {
@@ -72,44 +74,69 @@ public class UltralightUELibrary : ModuleRules
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
             string PlatformDir = "Win64";
-            string BinariesDir = Path.Combine(GetUProjectPath(), "Binaries", PlatformDir);
-            string PluginBinariesDir = Path.Combine("$(PluginDir)", "Binaries", PlatformDir); // Used for DelayLoadDLLs
+            string SrcDir = Path.Combine(ModuleDirectory, PlatformDir);
 
             PublicAdditionalLibraries.AddRange(new string[] {
-                Path.Combine(ModuleDirectory, PlatformDir, "AppCore.lib"),
-                Path.Combine(ModuleDirectory, PlatformDir, "WebCore.lib"),
-                Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.lib"),
-                Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.lib")
+                Path.Combine(SrcDir, "AppCore.lib"),
+                Path.Combine(SrcDir, "WebCore.lib"),
+                Path.Combine(SrcDir, "UltralightCore.lib"),
+                Path.Combine(SrcDir, "Ultralight.lib")
             });
 
+            // DelayLoadDLLs - just filenames, DLLs will be in same directory as executable
             PublicDelayLoadDLLs.AddRange(new string[] {
-                Path.Combine(PluginBinariesDir, "AppCore.dll"),
-                Path.Combine(PluginBinariesDir, "WebCore.dll"),
-                Path.Combine(PluginBinariesDir, "Ultralight.dll"),
-                Path.Combine(PluginBinariesDir, "UltralightCore.dll")
+                "AppCore.dll",
+                "WebCore.dll",
+                "Ultralight.dll",
+                "UltralightCore.dll"
             });
 
-            // RuntimeDependencies.AddRange(new RuntimeDependency[] {
-            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll")),
-            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.dll")),
-            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.dll")),
-            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "inspector_resources.pak")),
-            //     new RuntimeDependency(Path.Combine(ModuleDirectory, PlatformDir, "cacert.pem"))
-            // });
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, PlatformDir, "AppCore.dll"));
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll"));
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.dll"));
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.dll"));
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, PlatformDir, "inspector_resources.pak"));
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, PlatformDir, "cacert.pem"));
+            // Copy DLLs to multiple locations for different use cases
+            string PluginBinDir = Path.Combine(GetUProjectPath(), "Plugins", "UltralightUE", "Binaries", PlatformDir);
+            string ProjectBinDir = Path.Combine(GetUProjectPath(), "Binaries", PlatformDir);
+            
+            if (!Directory.Exists(PluginBinDir))
+                Directory.CreateDirectory(PluginBinDir);
+            if (!Directory.Exists(ProjectBinDir))
+                Directory.CreateDirectory(ProjectBinDir);
 
-            // Copy files to project binaries
-            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "AppCore.dll"), Target);
-            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "WebCore.dll"), Target);
-            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "UltralightCore.dll"), Target);
-            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "Ultralight.dll"), Target);
-            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "inspector_resources.pak"), Target);
-            CopyToBinaries(Path.Combine(ModuleDirectory, PlatformDir, "cacert.pem"), Target);
+            // DLLs and resources from Win64 directory
+            string[] Win64Files = { "AppCore.dll", "WebCore.dll", "UltralightCore.dll", "Ultralight.dll", "inspector_resources.pak", "cacert.pem" };
+            // Resources from resources directory
+            string ResourceDir = Path.Combine(ModuleDirectory, "resources");
+            string[] ResourceOnlyFiles = { "icudt67l.dat" };
+
+            // Copy and register Win64 files
+            foreach (string file in Win64Files)
+            {
+                string srcPath = Path.Combine(SrcDir, file);
+                if (File.Exists(srcPath))
+                {
+                    try
+                    {
+                        File.Copy(srcPath, Path.Combine(PluginBinDir, file), true);
+                        File.Copy(srcPath, Path.Combine(ProjectBinDir, file), true);
+                    }
+                    catch { /* Ignore copy errors during build */ }
+                }
+                RuntimeDependencies.Add(Path.Combine("$(TargetOutputDir)", file), srcPath, StagedFileType.NonUFS);
+            }
+
+            // Copy and register resource files (like ICU data)
+            foreach (string file in ResourceOnlyFiles)
+            {
+                string srcPath = Path.Combine(ResourceDir, file);
+                if (File.Exists(srcPath))
+                {
+                    try
+                    {
+                        File.Copy(srcPath, Path.Combine(PluginBinDir, file), true);
+                        File.Copy(srcPath, Path.Combine(ProjectBinDir, file), true);
+                    }
+                    catch { /* Ignore copy errors during build */ }
+                }
+                RuntimeDependencies.Add(Path.Combine("$(TargetOutputDir)", file), srcPath, StagedFileType.NonUFS);
+            }
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {

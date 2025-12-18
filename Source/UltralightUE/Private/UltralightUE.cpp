@@ -42,9 +42,28 @@ void FUltralightUEModule::StartupModule()
 
 	// Add on the relative location of the ultralight dll(s) and load them.
 #if PLATFORM_WINDOWS
+	// First try plugin Binaries directory (for editor)
 	WebCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/Win64/WebCore.dll"));
 	UltralightCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/Win64/UltralightCore.dll"));
 	UltralightLibraryPath = FPaths::Combine(*BaseDir, TEXT("Binaries/Win64/Ultralight.dll"));
+	
+	// If not found, try executable directory (for packaged builds)
+	if (!FPaths::FileExists(WebCoreLibraryPath))
+	{
+		FString ExeDir = FPlatformProcess::GetModulesDirectory();
+		WebCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("WebCore.dll"));
+		UltralightCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("UltralightCore.dll"));
+		UltralightLibraryPath = FPaths::Combine(*ExeDir, TEXT("Ultralight.dll"));
+	}
+	
+	// Also try the directory where the executable is located
+	if (!FPaths::FileExists(WebCoreLibraryPath))
+	{
+		FString ExeDir = FPaths::GetPath(FPlatformProcess::ExecutablePath());
+		WebCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("WebCore.dll"));
+		UltralightCoreLibraryPath = FPaths::Combine(*ExeDir, TEXT("UltralightCore.dll"));
+		UltralightLibraryPath = FPaths::Combine(*ExeDir, TEXT("Ultralight.dll"));
+	}
 #elif PLATFORM_MAC
 	WebCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Mac/Release/libUltralight.dylib"));
 	UltralightCoreLibraryPath = FPaths::Combine(*BaseDir, TEXT("Source/ThirdParty/UltralightUELibrary/Mac/Release/libUltralightCore.dylib"));
