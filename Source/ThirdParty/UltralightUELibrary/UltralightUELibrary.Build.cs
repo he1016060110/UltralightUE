@@ -176,7 +176,6 @@ public class UltralightUELibrary : ModuleRules
             RuntimeDependencies.Add(Path.Combine(DylibDir, "libWebCore.dylib"));
             RuntimeDependencies.Add(Path.Combine(DylibDir, "libUltralightCore.dylib"));
             RuntimeDependencies.Add(Path.Combine(DylibDir, "libUltralight.dylib"));
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak"));
             RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "resources", "cacert.pem"));
 
             // The CopyToBinaries function for Mac might need to target the correct location within the .app bundle
@@ -188,8 +187,15 @@ public class UltralightUELibrary : ModuleRules
             // Pak and pem files for Mac - assuming they are in a common resources folder or also in Mac/Release
             // The original script didn't copy these for Mac, so we'll add them assuming they are needed.
             // Their location might be different, this is an assumption based on Win64.
-             CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak"), Target);
-             CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "cacert.pem"), Target);
+            CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "cacert.pem"), Target);
+
+            // Inspector assets are optional (depends on SDK distribution).
+            string InspectorPakPath = Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak");
+            if (File.Exists(InspectorPakPath))
+            {
+                RuntimeDependencies.Add(InspectorPakPath);
+                CopyToBinaries(InspectorPakPath, Target);
+            }
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
@@ -226,15 +232,21 @@ public class UltralightUELibrary : ModuleRules
             RuntimeDependencies.Add(Path.Combine(SoDir, "libWebCore.so"));
             RuntimeDependencies.Add(Path.Combine(SoDir, "libUltralightCore.so"));
             RuntimeDependencies.Add(Path.Combine(SoDir, "libUltralight.so"));
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak"));
             RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "resources", "cacert.pem"));
 
             CopyToBinaries(Path.Combine(SoDir, "libAppCore.so"), Target);
             CopyToBinaries(Path.Combine(SoDir, "libWebCore.so"), Target);
             CopyToBinaries(Path.Combine(SoDir, "libUltralightCore.so"), Target);
             CopyToBinaries(Path.Combine(SoDir, "libUltralight.so"), Target); // Original had Ultralight.so, assuming libUltralight.so
-            CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak"), Target);
             CopyToBinaries(Path.Combine(ModuleDirectory, "resources", "cacert.pem"), Target);
+
+            // Inspector assets are optional (depends on SDK distribution).
+            string InspectorPakPath = Path.Combine(ModuleDirectory, "resources", "inspector_resources.pak");
+            if (File.Exists(InspectorPakPath))
+            {
+                RuntimeDependencies.Add(InspectorPakPath);
+                CopyToBinaries(InspectorPakPath, Target);
+            }
         }
 
         // Shared resources needed by Ultralight (ICU data and SSL certs)

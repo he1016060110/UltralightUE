@@ -34,7 +34,7 @@ Plugins/UltralightUE/Source/ThirdParty/UltralightUELibrary/Mac/Release/
 3. **构建配置** (`UltralightUELibrary.Build.cs`)
    - Mac 平台的库链接配置已就绪
    - 运行时依赖项已正确配置
-   - 资源文件（inspector_resources.pak, cacert.pem）已包含
+   - 资源文件（`cacert.pem`, `icudt67l.dat`）已包含；`inspector_resources.pak` 为可选（取决于 SDK 分发内容）
 
 ### 库加载顺序
 
@@ -85,10 +85,9 @@ UUltralightView* View = Subsystem->CreateView(
 
 2. **权限设置**：macOS 可能需要授予应用访问网络或文件系统的权限。
 
-3. **架构支持**：当前支持 x86_64 架构。如果需要在 Apple Silicon (ARM64) 上运行，需要重新编译 Ultralight 库。
+3. **架构支持**：当前支持 Apple Silicon (`arm64`) 架构。如果需要在 Intel Mac (`x86_64`) 上运行，需要提供对应的 `x86_64` 或 `universal2` 版本 Ultralight 库。
 
 4. **资源文件**：确保以下资源文件可用：
-   - `inspector_resources.pak`
    - `cacert.pem`
    - `icudt67l.dat` (在 resources 目录中)
 
@@ -132,4 +131,3 @@ UUltralightView* View = Subsystem->CreateView(
 - [Ultralight 官方网站](https://ultralig.ht)
 - [Ultralight 文档](https://docs.ultralig.ht)
 - [UltralightUE GitHub](https://github.com/JailbreakPapa/UltralightUE)
-
